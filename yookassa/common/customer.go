@@ -1,5 +1,8 @@
 package yoocommon
 
 type Customer struct {
-	Email string `json:"email"`
+	FullName string `json:"full_name,omitempty"`
+	INN      string `json:"inn,omitempty"`
+	Phone    string `json:"phone,omitempty"`
+	Email    string `json:"email,omitempty"`
 }
