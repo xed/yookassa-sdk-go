@@ -41,6 +41,9 @@ type Payment struct {
 	// Payment method used for this payment.
 	PaymentMethod PaymentMethoder `json:"payment_method,omitempty"`
 
+	// Payment method ID used for auto payment.
+	PaymentMethodID string `json:"payment_method_id,omitempty"`
+
 	// Payment method used for this payment for QR.
 	PaymentMethodData PaymentMethoder `json:"payment_method_data,omitempty"`
 
