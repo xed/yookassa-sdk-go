@@ -41,6 +41,9 @@ type Payment struct {
 	// Payment method used for this payment.
 	PaymentMethod PaymentMethoder `json:"payment_method,omitempty"`
 
+	// Saving payment methods allows conducting automatic recurring payments.
+	SavePaymentMethod bool `json:"save_payment_method,omitempty"`
+
 	// Payment method ID used for auto payment.
 	PaymentMethodID string `json:"payment_method_id,omitempty"`
 
