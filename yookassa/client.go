@@ -5,6 +5,9 @@ import (
 	"bytes"
 	"fmt"
 	"net/http"
+	"net/url"
+	"strings"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -67,4 +70,73 @@ func (c *Client) makeRequest(
 	}
 
 	return resp, nil
+}
+
+// SetSocks5Proxy configures the HTTP client to tunnel requests through the provided SOCKS5 proxy.
+// Pass an empty string to disable the proxy entirely.
+func (c *Client) SetSocks5Proxy(proxyAddr string) error {
+	if proxyAddr == "" {
+		c.client.Transport = nil
+		return nil
+	}
+
+	cfg, err := parseSocks5Proxy(proxyAddr)
+	if err != nil {
+		return err
+	}
+
+	dialer := newSocks5Dialer(cfg.address, cfg.username, cfg.password)
+	transport := &http.Transport{
+		ForceAttemptHTTP2:     true,
+		MaxIdleConns:          100,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+	}
+	transport.Proxy = nil
+	transport.DialContext = dialer.DialContext
+
+	c.client.Transport = transport
+	return nil
+}
+
+type socks5ProxyConfig struct {
+	address  string
+	username string
+	password string
+}
+
+func parseSocks5Proxy(raw string) (socks5ProxyConfig, error) {
+	normalized := raw
+	if !strings.Contains(raw, "://") {
+		normalized = "socks5://" + raw
+	}
+
+	u, err := url.Parse(normalized)
+	if err != nil {
+		return socks5ProxyConfig{}, err
+	}
+
+	if u.Scheme != "" && u.Scheme != "socks5" {
+		return socks5ProxyConfig{}, fmt.Errorf("yookassa: unsupported proxy scheme %q", u.Scheme)
+	}
+
+	address := u.Host
+	if address == "" {
+		address = u.Path
+	}
+	if address == "" {
+		return socks5ProxyConfig{}, fmt.Errorf("yookassa: proxy address is empty")
+	}
+	if !strings.Contains(address, ":") {
+		return socks5ProxyConfig{}, fmt.Errorf("yookassa: proxy address must include port")
+	}
+
+	config := socks5ProxyConfig{address: address}
+	if u.User != nil {
+		config.username = u.User.Username()
+		config.password, _ = u.User.Password()
+	}
+
+	return config, nil
 }
